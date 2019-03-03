@@ -36,6 +36,12 @@ typedef struct _CELL {
 #define INSTR_DUM  17
 #define INSTR_RAP  18
 #define INSTR_STOP 19
+#define INSTR_CGE  20
+#define INSTR_CGT  21
+#define INSTR_CEQ  22
+#define INSTR_CNE  23
+#define INSTR_CLE  24
+#define INSTR_CLT  25
 
 #define CAR_OFFSET(c) ((c->data >> 16) & 0xffff)
 #define CDR_OFFSET(c) (c->data & 0xffff)
@@ -388,6 +394,33 @@ void execute() {
                 S = cdr_cell(S);
 
                 S = make_cons_cell(make_int_cell(x%y), S);
+                break;
+
+            case INSTR_CGT:
+                x = car_int(S);
+                S = cdr_cell(S);
+                y = cdr_int(S);
+                S = cdr_cell(S);
+
+                S = make_cons_cell(make_int_cell(x>y), S);
+                break;
+
+            case INSTR_CGE:
+                x = car_int(S);
+                S = cdr_cell(S);
+                y = cdr_int(S);
+                S = cdr_cell(S);
+
+                S = make_cons_cell(make_int_cell(x>=y), S);
+                break;
+
+            case INSTR_CEQ:
+                x = car_int(S);
+                S = cdr_cell(S);
+                y = cdr_int(S);
+                S = cdr_cell(S);
+
+                S = make_cons_cell(make_int_cell(x==y), S);
                 break;
 
             case INSTR_SEL:
