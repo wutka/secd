@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define MAX_CELLS 2000
+#define MAX_CELLS 1000
+#define MAX_CODE_SIZE 1000
 
 typedef struct _CELL {
     unsigned char tag;
@@ -54,6 +55,8 @@ CELL *S = NULL;
 CELL *E = NULL;
 CELL *C = NULL;
 CELL *D = NULL;
+
+unsigned char code[MAX_CODE_SIZE];
 
 void panic(char *message) {
     printf("%s\n", message);
@@ -281,29 +284,46 @@ CELL *locate(int env_num, int env_offset) {
     return car_cell(curr_pos);
 }
 
+void set_code_pos(int new_pos) {
+    CELL *code_pos_cell;
+
+    if (C == NULL) {
+        return;
+    }
+
+    code_pos_cell = car_cell(C);
+    code_pos_cell->data = (unsigned long) new_pos;
+}
+
 void execute() {
-    int instr, x, y, z, env_num, env_offset;
+    int instr, x, y, z, env_num, env_offset, code_pos, t, f;
     CELL *loc, *loc2, *loc3;
 
     while (C != NULL) {
-        instr = car_int(C);
-        C = cdr_cell(C);
+        code_pos = car_int(C);
+        instr = code[code_pos++];
+        set_code_pos(code_pos);
 
         switch (instr) {
             case INSTR_NIL:
                 S = make_cons_cell(make_nil_cell(), S);
                 break;
+
             case INSTR_LDC:
-                x = car_int(C);
-                C = cdr_cell(C);
+                y = 0;
+                for (int i=0; i < 4; i++) {
+                    x = code[code_pos++];
+                    y = (y << 8) + x;
+                }
+                set_code_pos(code_pos);
+
                 S = make_cons_cell(make_int_cell(x), S);
                 break;
-            case INSTR_LD:
-                loc = car_cell(C);
-                C = cdr_cell(C);
 
-                env_num = car_int(loc);
-                env_offset = cdr_int(loc);
+            case INSTR_LD:
+                env_num = code[code_pos++];
+                env_offset = code[code_pos++];
+                set_code_pos(code_pos);
 
                 S = make_cons_cell(locate(env_num, env_offset), S);
                 break;
@@ -427,17 +447,15 @@ void execute() {
                 x = car_int(S);
                 S = cdr_cell(S);
 
-                loc = car_cell(S);
-                S = cdr_cell(S);
-
-                loc2 = car_cell(S);
-                S = cdr_cell(S);
+                t = code[code_pos++];
+                f = code[code_pos++];
+                set_code_pos(code_pos);
 
                 D = make_cons_cell(C, D);
                 if (x) {
-                    C = make_cons_cell(loc, C);
+                    C = make_cons_cell(make_int_cell(t), C);
                 } else {
-                    C = make_cons_cell(loc2, C);
+                    C = make_cons_cell(make_int_cell(f), C);
                 }
                 break;
 
@@ -447,43 +465,83 @@ void execute() {
                 break;
 
             case INSTR_LDF:
-                loc = car_cell(S);
-                S = cdr_cell(S);
+                y = 0;
+                for (int i=0; i < 4; i++) {
+                    x = code[code_pos++];
+                    y = (y << 8) + x;
+                }
 
-                S = make_cons_cell(make_cons_cell(loc, E), S);
+                set_code_pos(code_pos);
+
+                S = make_cons_cell(make_cons_cell(make_int_cell(y), E), S);
                 break;
 
             case INSTR_AP:
                 loc = car_cell(S);
                 S = cdr_cell(S);
 
-                loc2 = car_cell(S);
-                S = cdr_cell(S);
+                x = code[code_pos++];
+                set_code_pos(code_pos);
+
+                loc2 = make_nil_cell();
+                for (int i=0; i < x; i++) {
+                    loc2 = make_cons_cell(car_cell(S), loc2);
+                    S = cdr_cell(S);
+                }
 
                 D = make_cons_cell(S, make_cons_cell(E, make_cons_cell(C, D)));
 
                 S = make_nil_cell();
                 E = make_cons_cell(loc2, cdr_cell(loc));
-                C = car_cell(loc);
+                C = make_cons_cell(make_int_cell(car_int(loc)), make_nil_cell());
+
                 break;
 
+
+            case INSTR_RTN:
+                S = car_cell(D);
+                D = cdr_cell(D);
+
+                E = car_cell(D);
+                D = cdr_cell(D);
+
+                C = car_cell(D);
+                D = cdr_cell(D);
+                break;
+                
             case INSTR_DUM:
-                E = make_cons_cell(make_nil_cell(), E);
+                x = code[code_pos++];
+                set_code_pos(code_pos);
+
+                loc = make_nil_cell();
+                for (int i=0; i < x; i++) {
+                    loc = make_cons_cell(make_int_cell(0), loc);
+                }
+
+                E = make_cons_cell(loc, E);
                 break;
 
             case INSTR_RAP:
-                loc = car_cell(S); // f.(nil.e)
-                S = cdr_cell(S);
-                loc2 = car_cell(S); // v
+                loc = car_cell(S);
                 S = cdr_cell(S);
 
-                loc3 = car_cell(loc); // loc3 = f
-                loc = make_cons_cell(loc2, cdr_cell(loc));
+                x = code[code_pos++];
+                set_code_pos(code_pos);
+
+                loc2 = make_nil_cell();
+                for (int i=0; i < x; i++) {
+                    loc2 = make_cons_cell(car_cell(S), loc2);
+                    S = cdr_cell(S);
+                }
+                E = cdr_cell(E);
+                E = make_cons_cell(loc2, E);
 
                 D = make_cons_cell(S, make_cons_cell(E, make_cons_cell(C, D)));
-                S = NULL;
-                E = make_cons_cell(loc, E);
-                C = loc3;
+
+                S = make_nil_cell();
+                E = make_cons_cell(loc2, cdr_cell(loc));
+                C = make_cons_cell(make_int_cell(car_int(loc)), make_nil_cell());
+
                 break;
 
             case INSTR_STOP:
