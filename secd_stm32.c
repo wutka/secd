@@ -1,7 +1,11 @@
 #include "mbed.h"
 #include <stdint.h>
 
+<<<<<<< HEAD
+#define MAX_CELLS 500
+=======
 #define MAX_CELLS 1000
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
 #define MAX_CODE_SIZE 1000
 
 typedef struct _CELL {
@@ -45,8 +49,14 @@ typedef struct _CELL {
 #define INSTR_TSEL 26
 
 char *instrs[27] = { "NIL", "LDC", "LD", "ATOM", "CAR", "CDR", "CONS",
+<<<<<<< HEAD
+                     "ADD", "SUB", "MUL", "DIV", "MOD", "SEL", "JOIN", "LDF", "AP", "RTN",
+                     "DUM", "RAP", "STOP", "CGE", "CGT", "CEQ", "CNE", "CLE", "CLT", "TSEL"
+                   };
+=======
     "ADD", "SUB", "MUL", "DIV", "MOD", "SEL", "JOIN", "LDF", "AP", "RTN",
     "DUM", "RAP", "STOP", "CGE", "CGT", "CEQ", "CNE", "CLE", "CLT", "TSEL" };
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
 
 #define CAR_OFFSET(c) ((c->data >> 16) & 0xffff)
 #define CDR_OFFSET(c) (c->data & 0xffff)
@@ -66,12 +76,25 @@ void print_cell(CELL *cell);
 
 Serial pc(USBTX, USBRX);
 
+<<<<<<< HEAD
+extern "C" void mbed_reset();
+
+void panic(char *message)
+{
+    pc.printf("%s\r\n", message);
+    NVIC_SystemReset();
+}
+
+int compute_offset(CELL *cell)
+{
+=======
 void panic(char *message) {
     pc.printf("%s\n", message);
     mbed_reset();
 }
 
 int compute_offset(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (cell == NULL) {
         return 0;
     }
@@ -79,14 +102,24 @@ int compute_offset(CELL *cell) {
     return cell - cell_pool;
 }
 
+<<<<<<< HEAD
+CELL *cell_for_offset(int offset)
+{
+=======
 CELL *cell_for_offset(int offset) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (offset == 0) {
         return NULL;
     }
     return &cell_pool[offset];
 }
 
+<<<<<<< HEAD
+void initialize_pool()
+{
+=======
 void initialize_pool() {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     for (int i=1; i < MAX_CELLS-1; i++) {
         cell_pool[i].data = compute_offset(&cell_pool[i+1]);
     }
@@ -94,7 +127,12 @@ void initialize_pool() {
     free_list = &cell_pool[1];
 }
 
+<<<<<<< HEAD
+void free_cell(CELL *cell)
+{
+=======
 void free_cell(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     switch (cell->cell_type) {
         case TYPE_INT:
         case TYPE_NIL:
@@ -112,7 +150,12 @@ void free_cell(CELL *cell) {
     free_list = cell;
 }
 
+<<<<<<< HEAD
+void mark_cells(CELL *cell)
+{
+=======
 void mark_cells(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (cell == NULL) {
         return;
     }
@@ -126,7 +169,12 @@ void mark_cells(CELL *cell) {
     }
 }
 
+<<<<<<< HEAD
+void mark()
+{
+=======
 void mark() {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     mark_cells(S);
     mark_cells(E);
     mark_cells(C);
@@ -134,7 +182,12 @@ void mark() {
     mark_cells(free_list);
 }
 
+<<<<<<< HEAD
+void sweep()
+{
+=======
 void sweep() {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     for (int i=1; i < MAX_CELLS; i++) {
         if (!cell_pool[i].tag) {
             cell_pool[i].data = compute_offset(free_list);
@@ -145,12 +198,22 @@ void sweep() {
     }
 }
 
+<<<<<<< HEAD
+void collect_garbage()
+{
+=======
 void collect_garbage() {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     mark();
     sweep();
 }
 
+<<<<<<< HEAD
+CELL *alloc_cell()
+{
+=======
 CELL *alloc_cell() {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *new_cell;
 
     if (free_list == NULL) {
@@ -168,7 +231,12 @@ CELL *alloc_cell() {
     return new_cell;
 }
 
+<<<<<<< HEAD
+CELL *make_int_cell(int i)
+{
+=======
 CELL *make_int_cell(int i) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *new_cell;
 
     new_cell = alloc_cell();
@@ -178,7 +246,12 @@ CELL *make_int_cell(int i) {
     return new_cell;
 }
 
+<<<<<<< HEAD
+CELL *make_nil_cell()
+{
+=======
 CELL *make_nil_cell() {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *new_cell;
 
     new_cell = alloc_cell();
@@ -188,7 +261,12 @@ CELL *make_nil_cell() {
     return new_cell;
 }
 
+<<<<<<< HEAD
+CELL *make_cons_cell(CELL *cell_car, CELL *cell_cdr)
+{
+=======
 CELL *make_cons_cell(CELL *cell_car, CELL *cell_cdr) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *new_cell;
     int car_offset, cdr_offset;
 
@@ -208,14 +286,23 @@ CELL *make_cons_cell(CELL *cell_car, CELL *cell_cdr) {
     return new_cell;
 }
 
+<<<<<<< HEAD
+int car_int(CELL *cell)
+{
+=======
 int car_int(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (cell == NULL) {
         panic("Try to get CAR of nil");
     }
     if (cell->cell_type != TYPE_CONS) {
         panic("Tried to CAR non-CONS");
     }
+<<<<<<< HEAD
+
+=======
     
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *car_cell = cell_for_offset(CAR_OFFSET(cell));
     if (car_cell == NULL) {
         panic("Tried to get CAR of nil cell");
@@ -227,25 +314,43 @@ int car_int(CELL *cell) {
     return (int) car_cell->data;
 }
 
+<<<<<<< HEAD
+CELL *car_cell(CELL *cell)
+{
+=======
 CELL *car_cell(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (cell == NULL) {
         panic("Try to get CAR of nil");
     }
     if (cell->cell_type != TYPE_CONS) {
         panic("Tried to CAR non-CONS");
     }
+<<<<<<< HEAD
+
+    return cell_for_offset(CAR_OFFSET(cell));
+}
+
+int cdr_int(CELL *cell)
+{
+=======
     
     return cell_for_offset(CAR_OFFSET(cell));
 }
 
 int cdr_int(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (cell == NULL) {
         panic("Try to get CDR of nil");
     }
     if (cell->cell_type != TYPE_CONS) {
         panic("Tried to CDR non-CONS");
     }
+<<<<<<< HEAD
+
+=======
     
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *cdr_cell = cell_for_offset(CDR_OFFSET(cell));
     if (cdr_cell == NULL) {
         panic("Tried to get CDR of nil cell");
@@ -257,7 +362,12 @@ int cdr_int(CELL *cell) {
     return (int) cdr_cell->data;
 }
 
+<<<<<<< HEAD
+CELL *cdr_cell(CELL *cell)
+{
+=======
 CELL *cdr_cell(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     if (cell == NULL) {
         panic("Tried to get CDR of nil");
     }
@@ -267,7 +377,12 @@ CELL *cdr_cell(CELL *cell) {
     return cell_for_offset(CDR_OFFSET(cell));
 }
 
+<<<<<<< HEAD
+CELL *locate(int env_num, int env_offset)
+{
+=======
 CELL *locate(int env_num, int env_offset) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *curr_pos;
 
     curr_pos = E;
@@ -288,7 +403,12 @@ CELL *locate(int env_num, int env_offset) {
     return car_cell(curr_pos);
 }
 
+<<<<<<< HEAD
+void set_code_pos(int new_pos)
+{
+=======
 void set_code_pos(int new_pos) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *code_pos_cell;
 
     if (C == NULL) {
@@ -299,9 +419,16 @@ void set_code_pos(int new_pos) {
     code_pos_cell->data = (unsigned long) new_pos;
 }
 
+<<<<<<< HEAD
+void execute()
+{
+    int instr, x, y, env_num, env_offset, code_pos, t, f;
+    CELL *loc, *loc2;
+=======
 void execute() {
     int instr, x, y, z, env_num, env_offset, code_pos, t, f;
     CELL *loc, *loc2, *loc3;
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
 
     while (C != NULL) {
         code_pos = car_int(C);
@@ -342,7 +469,11 @@ void execute() {
                 }
                 S = make_cons_cell(make_int_cell(x), S);
                 break;
+<<<<<<< HEAD
+
+=======
                     
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
             case INSTR_CAR:
                 loc = car_cell(S);
                 S = cdr_cell(S);
@@ -554,7 +685,11 @@ void execute() {
                 C = car_cell(D);
                 D = cdr_cell(D);
                 break;
+<<<<<<< HEAD
+
+=======
                 
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
             case INSTR_DUM:
                 x = code[code_pos++];
                 set_code_pos(code_pos);
@@ -598,7 +733,12 @@ void execute() {
 
 }
 
+<<<<<<< HEAD
+void print_cell(CELL *cell)
+{
+=======
 void print_cell(CELL *cell) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     int printed_first;
     if (cell == NULL) return;
 
@@ -615,7 +755,11 @@ void print_cell(CELL *cell) {
             printed_first = 0;
             while (cell != NULL) {
                 if (printed_first) printf(" ");
+<<<<<<< HEAD
+                print_cell(cell_for_offset(CAR_OFFSET(cell)));
+=======
                 pc.print_cell(cell_for_offset(CAR_OFFSET(cell)));
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
                 printed_first = 1;
                 cell = cell_for_offset(CDR_OFFSET(cell));
                 if (cell == NULL) break;
@@ -629,7 +773,12 @@ void print_cell(CELL *cell) {
     }
 }
 
+<<<<<<< HEAD
+CELL *reverse(CELL *lst)
+{
+=======
 CELL *reverse(CELL *lst) {
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
     CELL *new_list = NULL;
 
     while (lst != NULL) {
@@ -640,6 +789,77 @@ CELL *reverse(CELL *lst) {
     return new_list;
 }
 
+<<<<<<< HEAD
+int main()
+{
+    int ch, ch2, b, code_pos;
+    int reading, wait_for_colon;
+
+    pc.baud(115200);
+    
+    while (1) {
+        code_pos = 0;
+        reading = 0;
+        wait_for_colon = 0;
+        while (1) {
+            if (reading) {
+                ch = pc.getc();
+                if (ch == '<') break;
+
+                ch2 = pc.getc();
+                pc.printf("%c%c", ch, ch2);
+                if ((ch >= '0') && (ch <= '9')) {
+                    ch -= '0';
+                } else if ((ch >= 'A') && (ch <= 'F')) {
+                    ch = 10 + ch - 'A';
+                } else if ((ch >= 'a') && (ch <= 'f')) {
+                    ch = 10 + ch - 'a';
+                } else {
+                    panic("Invalid character received");
+                }
+                if ((ch2 >= '0') && (ch2 <= '9')) {
+                    ch2 -= '0';
+                } else if ((ch2 >= 'A') && (ch2 <= 'F')) {
+                    ch2 = 10 + ch2 - 'A';
+                } else if ((ch2 >= 'a') && (ch2 <= 'f')) {
+                    ch2 = 10 + ch2 - 'a';
+                } else {
+                    panic("Invalid character received");
+                }
+                b = (ch << 4) + ch2;
+                code[code_pos++] = b;
+            } else {
+                ch = pc.getc();
+                if (ch == '>') {
+                    wait_for_colon = 1;
+                } else if ((ch == ':') && wait_for_colon) {
+                    reading = 1;
+                    wait_for_colon = 0;
+                } else if ((ch == '\n') || (ch == '\r')) {
+                    pc.printf("SECD Machine\r\n");
+                    wait_for_colon = 0;
+                } else {
+                    pc.printf("Unexpected char - %c\r\n", ch);
+                }
+            }
+        }
+
+        S = NULL;
+        E = NULL;
+        C = NULL;
+        D = NULL;
+        
+        initialize_pool();
+
+        C = make_cons_cell(make_int_cell(0), make_nil_cell());
+
+        execute();
+
+        pc.printf("\r\nFinal stack:\r\n");
+        print_cell(S);
+        pc.printf("\r\n");
+    }
+=======
 int main() {
     int ch, ch2, b, cell_pos;
     int reading;
@@ -689,4 +909,5 @@ int main() {
     pc.printf("\nFinal stack:\n");
     pc.print_cell(S);
     pc.printf("\n");
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
 }

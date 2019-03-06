@@ -46,7 +46,11 @@
 
 (define (assemble-file file-in file-out)
   (set! fileout (open-output-file file-out))
+<<<<<<< HEAD
+  (format fileout ">>:")
+=======
   (format fileout ">>")
+>>>>>>> 9a34470afd3357268a5e4676c4d6c0f586db78b4
   (let ((lines (string-split (read-all file-in) "\n")))
     (map assemble (filter not-comment? lines)))
   (format fileout "<")
