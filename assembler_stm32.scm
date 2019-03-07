@@ -53,20 +53,14 @@
   (close-output-port fileout))
 
 (define (assemble-int i)
-  (display "assemble-int ")(display i)(newline)
   (output-byte (bitwise-and (arithmetic-shift i -24) 255))
   (output-byte (bitwise-and (arithmetic-shift i -16) 255))
   (output-byte (bitwise-and (arithmetic-shift i -8) 255))
   (output-byte (bitwise-and i 255)))
 
 (define (assemble-args p i)
-  (display "assemble-args ")
-  (display p)
-  (display " ")
-  (display i)(newline)
   (if (not (null? p))
       (begin
-	(display (car i))(display " ")(display (equal? (car i) 'INT))(newline)
 	(cond
 	 [(equal? (car i) 'BYTE) (output-byte (string->number (car p)))]
 	 [(equal? (car i) 'INT) (assemble-int (string->number (car p)))])
@@ -75,8 +69,6 @@
 (define (assemble line)
   (let* [(parts (string-split line))
 	 (instr (cadr (assoc (car parts) opcodes)))]
-    (display parts)(newline)
-    (display instr)(newline)
     (output-byte (car instr))
     (assemble-args (cdr parts) (cdr instr))))
     

@@ -2,20 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define MAX_CELLS 1000
-#define MAX_CODE_SIZE 1000
-
-typedef struct _CELL {
-    unsigned char tag;
-    unsigned char cell_type;
-    unsigned char unused0;
-    unsigned char unused1;
-    unsigned long data;
-} CELL;
-
-#define TYPE_CONS 0
-#define TYPE_INT 1
-#define TYPE_NIL 2
+#include "secd.h"
 
 #define INSTR_NIL  0
 #define INSTR_LDC  1
@@ -49,9 +36,6 @@ char *instrs[27] = { "NIL", "LDC", "LD", "ATOM", "CAR", "CDR", "CONS",
     "ADD", "SUB", "MUL", "DIV", "MOD", "SEL", "JOIN", "LDF", "AP", "RTN",
     "DUM", "RAP", "STOP", "CGE", "CGT", "CEQ", "CNE", "CLE", "CLT", "TSEL" };
 
-#define CAR_OFFSET(c) ((c->data >> 16) & 0xffff)
-#define CDR_OFFSET(c) (c->data & 0xffff)
-
 CELL cell_pool[MAX_CELLS];
 
 CELL *free_list = NULL;
@@ -63,13 +47,8 @@ CELL *D = NULL;
 
 unsigned char code[MAX_CODE_SIZE];
 
-void print_cell(CELL *cell);
-
-void panic(char *message) {
-    printf("%s\n", message);
-    fflush(stdout);
-    exit(1);
-}
+extern void print_cell(CELL *cell);
+extern void panic(char *message);
 
 int compute_offset(CELL *cell) {
     if (cell == NULL) {
@@ -139,7 +118,9 @@ void sweep() {
         if (!cell_pool[i].tag) {
             cell_pool[i].data = compute_offset(free_list);
             free_list = &cell_pool[i];
+#ifdef DEBUG
             printf("Freed cell %d\n", i);
+#endif
         } else {
             cell_pool[i].tag = 0;
         }
@@ -149,8 +130,10 @@ void sweep() {
 void collect_garbage() {
     mark();
     sweep();
+#ifdef DEBUG
     printf("\nCollected Garbage\n");
     fflush(stdout);
+#endif
 }
 
 CELL *alloc_cell() {
@@ -279,6 +262,7 @@ CELL *locate(int env_num, int env_offset) {
         if (curr_pos == NULL) {
             panic("Invalid environment reference");
         }
+        env_num--;
     }
 
     curr_pos = car_cell(curr_pos);
@@ -287,6 +271,7 @@ CELL *locate(int env_num, int env_offset) {
         if (curr_pos == NULL) {
             panic("Invalid environment offset");
         }
+        env_offset--;
     }
     return car_cell(curr_pos);
 }
@@ -307,6 +292,7 @@ void execute() {
     CELL *loc, *loc2, *loc3;
 
     while (C != NULL) {
+#ifdef DEBUG
         printf("S: ");
         print_cell(S);
         printf("  E: ");
@@ -316,12 +302,15 @@ void execute() {
         printf("  D: ");
         print_cell(D);
         printf("\n");
+#endif
 
         code_pos = car_int(C);
         instr = code[code_pos++];
         set_code_pos(code_pos);
 
+#ifdef DEBUG
         printf("Instr %s\n", instrs[instr]);
+#endif
         switch (instr) {
             case INSTR_NIL:
                 S = make_cons_cell(make_nil_cell(), S);
@@ -390,18 +379,11 @@ void execute() {
                 break;
 
             case INSTR_ADD:
-                printf("Add\n");
                 x = car_int(S);
                 S = cdr_cell(S);
 
-                print_cell(S);
-                printf("\n");
-
                 y = car_int(S);
                 S = cdr_cell(S);
-
-                print_cell(S);
-                printf("\n");
 
                 S = make_cons_cell(make_int_cell(x+y), S);
                 break;
@@ -466,7 +448,6 @@ void execute() {
                 y = car_int(S);
                 S = cdr_cell(S);
 
-                printf("Comparing %d to %d\n", x, y);
                 S = make_cons_cell(make_int_cell(x==y), S);
                 break;
 
@@ -487,7 +468,6 @@ void execute() {
                 set_code_pos(code_pos);
 
                 D = make_cons_cell(C, D);
-                printf("Sel on %d\n", x);
                 if (x) {
                     C = make_cons_cell(make_int_cell(t), C);
                 } else {
@@ -511,7 +491,6 @@ void execute() {
                 }
                 set_code_pos(code_pos);
 
-                printf("tsel on %d\n", x);
                 if (x) {
                     C = make_cons_cell(make_int_cell(t), C);
                 } else {
@@ -616,37 +595,6 @@ void execute() {
 
 }
 
-void print_cell(CELL *cell) {
-    int printed_first;
-    if (cell == NULL) return;
-
-    switch (cell->cell_type) {
-        case TYPE_INT:
-            printf("%d", (int) cell->data);
-            break;
-        case TYPE_NIL:
-            printf("NIL");
-            break;
-
-        case TYPE_CONS:
-            printf("(");
-            printed_first = 0;
-            while (cell != NULL) {
-                if (printed_first) printf(" ");
-                print_cell(cell_for_offset(CAR_OFFSET(cell)));
-                printed_first = 1;
-                cell = cell_for_offset(CDR_OFFSET(cell));
-                if (cell == NULL) break;
-                if (cell->cell_type == TYPE_INT) {
-                    printf(" . %d", (int) cell->data);
-                    break;
-                }
-            }
-            printf(")");
-            break;
-    }
-}
-
 CELL *reverse(CELL *lst) {
     CELL *new_list = NULL;
 
@@ -656,92 +604,4 @@ CELL *reverse(CELL *lst) {
     }
 
     return new_list;
-}
-
-CELL *read_sexpr() {
-    char ch;
-    int num, in_num;
-    CELL *curr_list;
-
-    curr_list = NULL;
-
-    ch = getchar();
-    if (ch != '(') {
-        panic("Expected ( to start sexpr");
-    }
-
-    num = 0;
-    in_num = 0;
-    while (1) {
-        ch = getchar();
-        if ((ch >= '0') && (ch <= '9')) {
-            if (!in_num) {
-                in_num = 1;
-                num = 0;
-            }
-            num = num * 10 + (ch - '0');
-            in_num = 1;
-        } else if (ch == ' ') {
-            if (in_num) {
-                curr_list = make_cons_cell(make_int_cell(num), curr_list);
-                in_num = 0;
-            }
-        } else if (ch == ')') {
-            if (in_num) {
-                curr_list = make_cons_cell(make_int_cell(num), curr_list);
-                in_num = 0;
-            }
-            return reverse(curr_list);
-        } else if (ch == '(') {
-            ungetc('(', stdin);
-            curr_list = make_cons_cell(read_sexpr(), curr_list);
-        } else if (ch == '\n') {
-        } else {
-            printf("Unknown character: %c\n", ch);
-        }
-    }
-}
-
-void skip_newline() {
-    char ch;
-
-    ch = getchar();
-    while (ch == '\n') {
-        ch = getchar();
-    }
-    ungetc(ch, stdin);
-}
-
-int main(int argc, char *argv[]) {
-    CELL *foo, *bar, *baz, *the_list;
-    int i, ch;
-    FILE *infile;
-
-    if (argc < 2) {
-        printf("Please supply a filename\n");
-        return 0;
-    }
-
-    if ((infile = fopen(argv[1], "rb")) == NULL) {
-        perror("fopen");
-        return 0;
-    }
-
-    i = 0;
-    while ((ch = fgetc(infile)) != EOF) {
-        if (i >= MAX_CODE_SIZE) {
-            panic("No more code space");
-        }
-        code[i++] = (unsigned char) (ch & 0xff);
-    }
-
-    initialize_pool();
-
-    C = make_cons_cell(make_int_cell(0), make_nil_cell());
-
-    execute();
-
-    printf("\nFinal stack:\n");
-    print_cell(S);
-    printf("\n");
 }
